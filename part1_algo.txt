@@ -1,0 +1,8 @@
+most constrained variable if tie then most constraining variable
+value is least constraining
+
+least constraining variable is the smallest word
+most constrained variable: most stuff in the column, row, in the cell
+most constraining variable: same as most constrained
+
+options in the node, so that if it backtracks you know what other option to choose.
