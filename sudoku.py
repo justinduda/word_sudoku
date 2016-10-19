@@ -96,10 +96,37 @@ def complete_grid(state):
 
 def recursive_backtracking(state):
     if not valid_grid(state):
-        pass
+        state = state.parent
         #return invalidstate() --> I think you need to go back up the tree here
     if complete_grid(state):
        return state
+
+    n = 0
+
+    while not complete_grid(state):
+            curr_word = state.words[n]
+            if state.cur_grid[i][j] == None:
+                vert_iterator = j
+                while vert_iterator != 9:
+                    if state.cur_grid[i][vert_iterator] == None:
+                        state.cur_grid[i][vert_iterator] = curr_word[0]
+                        curr_word = curr_word[1:]
+                    else:
+                        if state.cur_grid[i][vert_iterator] == curr_word[0]:
+                            state.cur_grid[i][vert_iterator] = curr_word[0]
+                            curr_word = curr_word[1:]
+                        else:
+                            while vert_iterator != j:
+                                state.cur_grid[i][vert_iterator] = None
+                                break
+                            break
+            n += 1
+
+
+
+
+    state.words
+
 
     #make a priority queue ---> most contraint variables if tie then most constraining variable
     #for x in priority_queue
@@ -122,6 +149,7 @@ def main():
     # make a grid object which contains space objects
     myGrid = Grid()
     myWordList = word_list()
+    myWordList.sort(lambda  x,y: cmp(len(x), len(y)))
     print myWordList
     if myGrid.preset_chars != None:
         rootState = state_node(myGrid.preset_chars, myWordList, None, myGrid, myGrid.empty_spaces)
