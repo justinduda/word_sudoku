@@ -1,4 +1,5 @@
 from sys import argv
+import operator
 
 def define_grid():
     grid = []
@@ -32,14 +33,14 @@ def define_grid():
     return grid, empty_spaces, preset_chars
 
 class state_node(object):
-    def __init__(self, parent=None, options=None, words=None, grid=None, set_char=None, nodes=None):
+    def __init__(self, parent=None, options=None, words=None, grid=None, set_char=None, variables=None):
         """parent -> the parent node, options -> the different options avalible at this step, words-> wordlist,  grid ->actual grid variables-> the words left in the word bank"""
         self.parent = parent
         self.options = options
         self.words = words
         self.grid = grid
         self.set_char = set_char
-        self.nodes = nodes
+        self.variables = variables
 
 
 def word_list():
@@ -116,7 +117,7 @@ def print_clean_grid(Grid):
             else:
                 my_string.append(char)
         my_string.append('\n')
-        print ''.join(my_string)
+        print(''.join(my_string))
 
 def recursive_backtracking(state):
     # if not valid_grid(state):
@@ -204,8 +205,8 @@ def square_constraints(grid, i, j):
     start_y = j+3 % 3
 
     constraints = 0
-    for x in range(start_x, start_x+3):
-        for y in range(start_y, start_y+3):
+    for x in range(start_x, start_x+2):
+        for y in range(start_y, start_y+2):
             if grid[x][y] != '0':
                 constraints += 1
     return constraints
@@ -255,7 +256,7 @@ def main():
     unprioritized_variables = {}
     for i in range(0, 8):
         for j in range(0, 8):
-            unprioritized_variables((i, j)) = constraints(rootState.grid, i, j)
+            unprioritized_variables[(i, j)] = constraints(myGrid, i, j)
     variables = sorted(unprioritized_variables.items(), key=operator.itemgetter(1))
 
     if preset_chars != None:
@@ -264,11 +265,6 @@ def main():
         rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
     #"parent -> the parent node, options -> the different options avalible at this step,    words-> wordlist  grid ->actual grid variables-> the words left in the word bank"""
     #print_clean_grid(myGrid)
-
-
-    # sort priority structure by square
-    square_priority = sort_by_square(rootState, square_priority)
-
 
     backtracking_search(rootState)
 
