@@ -32,13 +32,14 @@ def define_grid():
     return grid, empty_spaces, preset_chars
 
 class state_node(object):
-    def __init__(self, parent=None, options=None, words=None, grid=None, set_char=None):
+    def __init__(self, parent=None, options=None, words=None, grid=None, set_char=None, nodes=None):
         """parent -> the parent node, options -> the different options avalible at this step, words-> wordlist,  grid ->actual grid variables-> the words left in the word bank"""
         self.parent = parent
         self.options = options
         self.words = words
         self.grid = grid
         self.set_char = set_char
+        self.nodes = nodes
 
 
 def word_list():
@@ -132,7 +133,7 @@ def recursive_backtracking(state):
 # Try assigning the next least constraining value to the current variable
 # recurse
 
-    variable = (0, 0)
+    variable = state.variables[0]
     #print state.words
     value = state.options[0]
     word_done = False
@@ -163,6 +164,7 @@ def recursive_backtracking(state):
             # Remove variable and value from respective queues
             if not word_done:
                 state.options.remove(value)
+                variables = sorted(variables.items(), key=operator.itemgetter(1))
                 recursive_backtracking(state)
             print_clean_grid(state.grid)
         else:
@@ -192,9 +194,38 @@ def recursive_backtracking(state):
 
             if not word_done:
                 state.options.remove(value)
+                variables = sorted(variables.items(), key=operator.itemgetter(1))
                 recursive_backtracking(state)
             print_clean_grid(state.grid)
     return
+
+def square_constraints(grid, i, j):
+    start_x = i+3 % 3
+    start_y = j+3 % 3
+
+    constraints = 0
+    for x in range(start_x, start_x+3):
+        for y in range(start_y, start_y+3):
+            if grid[x][y] != '0':
+                constraints += 1
+    return constraints
+
+def x_constraints(grid, i, j):
+    constraints = 0
+    for x in range(0, 8):
+        if grid[x][j] != '0':
+            constraints += 1
+    return constraints
+
+def y_constraints(grid, i, j):
+    constraints = 0
+    for y in range(0, 8):
+        if grid[i][y] != '0':
+            constraints += 1
+    return constraints
+
+def constraints(grid, i, j):
+    return square_constraints(grid, i, j) + x_constraints(grid, i, j) + y_constraints(grid, i, j)
 
 #make a priority queue ---> most contraint variables if tie then most constraining variable
 #for x in priority_queue
@@ -219,12 +250,26 @@ def main():
     myWordList = word_list()
     #myWordList.sort(lambda  x,y: cmp(len(x), len(y)))
     myWordList= sorted(myWordList, key=lambda x: len(x))
+
+    # create priority structure
+    unprioritized_variables = {}
+    for i in range(0, 8):
+        for j in range(0, 8):
+            unprioritized_variables((i, j)) = constraints(rootState.grid, i, j)
+    variables = sorted(unprioritized_variables.items(), key=operator.itemgetter(1))
+
     if preset_chars != None:
-        rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars)
+        rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
     else:
-        rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars)
+        rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
     #"parent -> the parent node, options -> the different options avalible at this step,    words-> wordlist  grid ->actual grid variables-> the words left in the word bank"""
     #print_clean_grid(myGrid)
+
+
+    # sort priority structure by square
+    square_priority = sort_by_square(rootState, square_priority)
+
+
     backtracking_search(rootState)
 
 
