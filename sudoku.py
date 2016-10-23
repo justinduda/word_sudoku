@@ -207,21 +207,21 @@ def square_constraints(grid, i, j):
     constraints = 0
     for x in range(start_x, start_x+2):
         for y in range(start_y, start_y+2):
-            if grid[x][y] != '0':
+            if grid[x][y] != '_':
                 constraints += 1
     return constraints
 
 def x_constraints(grid, i, j):
     constraints = 0
     for x in range(0, 8):
-        if grid[x][j] != '0':
+        if grid[x][j] != '_':
             constraints += 1
     return constraints
 
 def y_constraints(grid, i, j):
     constraints = 0
     for y in range(0, 8):
-        if grid[i][y] != '0':
+        if grid[i][y] != '_':
             constraints += 1
     return constraints
 
@@ -257,7 +257,7 @@ def main():
     for i in range(0, 8):
         for j in range(0, 8):
             unprioritized_variables[(i, j)] = constraints(myGrid, i, j)
-    variables = sorted(unprioritized_variables.items(), key=operator.itemgetter(1))
+    variables = sorted(unprioritized_variables.items(), key=operator.itemgetter(1), reverse=True)
 
     if preset_chars != None:
         rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
