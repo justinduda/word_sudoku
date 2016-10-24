@@ -10,6 +10,7 @@ def define_grid():
     start = True
     with open(argv[1], 'r') as myFile:
         for line in myFile:
+            col = 0
             start2 = True
             if start == True:
                 start = False
@@ -34,7 +35,12 @@ def define_grid():
 
 class state_node(object):
     def __init__(self, parent=None, options=None, words=None, grid=None, set_char=None, variables=None):
-        """parent -> the parent node, options -> the different options avalible at this step, words-> wordlist,  grid ->actual grid variables-> the words left in the word bank"""
+        """parent -> the parent node,
+        options -> the different options avalible at this step,
+        words-> wordlist,
+        grid ->actual grid,
+        variables-> the priority to decide where the next word should go"""
+
         self.parent = parent
         self.options = options
         self.words = words
@@ -52,7 +58,7 @@ def word_list():
                 if char == '\r' or char == '\n':
                     pass
                 else:
-                    temp_line.append(char)
+                    temp_line.append(char.upper())
             temp = ''.join(temp_line)
             ret_list.append(temp)
         return ret_list
@@ -119,6 +125,49 @@ def print_clean_grid(Grid):
         my_string.append('\n')
         print(''.join(my_string))
 
+def delete_word(val, dir, space_tuple, grid):
+    """deletes the word from the grid"""
+    if dir == 'h':
+        for y in range(space_tuple[1], space_tuple[1] + len(val)):
+            grid[space_tuple[0]][y] = '_'
+    if dir == 'v':
+        for x in range(space_tuple[0], space_tuple[0] + len(val)):
+            grid[x][space_tuple[1]] = '_'
+    return grid
+
+
+def print_starting_point(grid,coor):
+    row = 0
+    for list in grid:
+        col = 0
+        my_string = []
+        for char in list:
+            if coor == (row,col):
+                my_string.append('*')
+            else:
+                if char == None:
+                    my_string.append('_')
+                else:
+                    my_string.append(char)
+            col += 1
+        row += 1
+        my_string.append('\n')
+        print(''.join(my_string))
+
+
+def check_can_fit(dir, val, start):
+    """Checks if the word can even fit in the space given"""
+    if dir == 'v':
+        if start[1]+ len(val) > 9:
+            print 'nope'
+            return False
+        return True
+    else:
+        if start[0] +len(val) > 9:
+            return False
+        return True
+
+
 def recursive_backtracking(state):
     # if not valid_grid(state):
     #     state = state.parent
@@ -134,70 +183,140 @@ def recursive_backtracking(state):
 # Try assigning the next least constraining value to the current variable
 # recurse
 
-    variable = state.variables[0]
-    #print state.words
-    value = state.options[0]
-    word_done = False
+    print state.variables[0][0]
 
-    # vertical attempt
-    vertical_succeeded = True
-    for y in range(variable[1], variable[1] + len(value)):
-        #current grid element = _ or
-        if state.grid[variable[0]][y] == '_' or state.grid[variable[0]][y] == value[y - variable[1]]:
-            #print 'in herey'
-            #print "grid letter: " + state.grid[y][variable[1]] + " word letter: " + value[y - variable[0]]
-            state.grid[variable[0]][y] = value[y - variable[1]]
-            #print_clean_grid(state.grid)
-            #print 'if'
-            if y - variable[1] == len(value) - 1:
-                word_done = True
-        else:
-            while state.grid[variable[0]][variable[1]] != '_':
-                if not (variable[0],y) in state.set_char.keys():
-                    state.grid[variable[0]][y] = '_'
-                    #print_clean_grid(state.grid)
-                    #print 'else'
-                y -= 1
-                vertical_succeeded = False
-            break
-    if vertical_succeeded:
+    space_tuple = state.variables[0][0]
+    value = state.options[0]
+    #check if the space_tuple is a letter, if so lets use that
+    if (space_tuple[0], space_tuple[1]) in state.set_char.keys():
+        letter = state.set_char[(space_tuple[0],space_tuple[1])]
+        for elem in state.options:
+            if elem[0] == letter:
+                value = elem
+                break
+
+
+    print value
+
+    word_done = False
+    print_starting_point(state.grid, space_tuple)
+    print ''
+
+    # horz attempt
+    horz_succeeded = True
+    #check if the word will even fit
+    if check_can_fit('h',value,space_tuple):
+        for y in range(space_tuple[1], space_tuple[1] + len(value)):
+            #current grid index = _ OR index is already = to that letter
+            if state.grid[space_tuple[0]][y] == '_' or state.grid[space_tuple[0]][y] == value[y - space_tuple[1]]:
+                #set the index to the char
+                state.grid[space_tuple[0]][y] = value[y - space_tuple[1]]
+                #####need to add the letter to the preset_chars
+                #####state.set_char[space_tuple[0][y]] = value[y - space_tuple[1]]   ##-----> when we remove the letters we need to remove from this
+                #check some length??
+                if y - space_tuple[1] == len(value): #----> len(value) -1
+                    word_done = True
+            #if the index isn't that letter or _
+            else:
+                if (space_tuple[0], y) in state.set_char.keys():
+                    break
+                #if it is a letter
+                while state.grid[space_tuple[0]][space_tuple[1]] != '_':
+                    #if it isnt one of the preset chars
+                    if not (space_tuple[0],y) in state.set_char.keys():
+                        #set it back to a blank
+                        state.grid[space_tuple[0]][y] = '_'
+                    #go back one
+                    y -= 1
+                    #it fails in putting a word
+                    horz_succeeded = False
+                break
+        print_clean_grid(state.grid)
+        print ''
+    else:
+        horz_succeeded = False
+    if horz_succeeded:
         if valid_grid(state):
-            # Remove variable and value from respective queues
-            if not word_done:
-                state.options.remove(value)
-                variables = sorted(variables.items(), key=operator.itemgetter(1))
-                recursive_backtracking(state)
-            print_clean_grid(state.grid)
+        #Remove variable and value from respective queues
+            # if not word_done:
+            #     state.parent.options.remove(value)
+            #     variables = sorted(state.variables.items(), key=operator.itemgetter(1))
+            #     state.variables = variables
+            #     if state.parent != None:
+            #         recursive_backtracking(state.parent)
+            # else:
+            #     variables = sorted(state.variables.items(), key=operator.itemgetter(1))
+            #     rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
+            if word_done:
+                new_options = state.options
+                new_options.remove(value)
+                new_spaces = state.variables
+                new_spaces.pop(0)
+                newState = state_node(state, new_options, state.words, state.grid, state.set_char, new_spaces)
+                print_clean_grid(state.grid)
+                print ''
+                recursive_backtracking(newState)
+            else:
+                new_options = state.options
+                new_options.remove(value)
+                new_spaces = state.variables
+                new_spaces.pop(0)
+                newState = state_node(state, new_options, state.words, state.grid, state.set_char, new_spaces)
+                print_clean_grid(state.grid)
+                print ''
+                recursive_backtracking(newState)
+
         else:
             return
 
-    # horizontal attempt
-    horizontal_succeeded = True
-    for x in range(variable[0], variable[0] + len(value)):
-        if state.grid[x][variable[1]] == '_' or state.grid[x][variable[1]] == value[x - variable[0]]:
-            #print 'in here2'
-            #print "grid letter: " + state.grid[x][variable[1]] + " word letter: " + value[x - variable[0]]
-            state.grid[x][variable[1]] = value[x - variable[0]]
-            if x - variable[1] == len(value) - 1:
-                word_done = True
-        else:
-            #print 'in here'
-            while state.grid[variable[0]][variable[1]] != '_':
-                if not (variable[0], variable[1]) in state.set_char.keys():
-                    #print("letter deleted: " + state.grid[variable[0], variable[1]])
-                    state.grid[x][variable[1]] = '_'
-                x -= 1
-                horizontal_succeeded = False
-            break
-    if horizontal_succeeded:
+
+
+    # vert attempt
+    vert_succeeded = True
+    if check_can_fit('v', value, space_tuple):
+        for x in range(space_tuple[0], space_tuple[0] + len(value)):
+            if state.grid[x][space_tuple[1]] == '_' or state.grid[x][space_tuple[1]] == value[x - space_tuple[0]]:
+                state.grid[x][space_tuple[1]] = value[x - space_tuple[0]]
+                if x - space_tuple[1] == len(value): #----> len(value) -1
+                    word_done = True
+            else:
+                while state.grid[space_tuple[0]][space_tuple[1]] != '_':
+                    if not (space_tuple[0], space_tuple[1]) in state.set_char.keys():
+                        state.grid[x][space_tuple[1]] = '_'
+                    x -= 1
+                    vert_succeeded = False
+                break
+    else:
+        print 'whyyy'
+        vert_succeeded = False
+    if vert_succeeded:
+        print 'in here'
         if valid_grid(state):
             # Remove variable and value from respective queues
+            #if not word_done:
+            #    state.options.remove(value)
+            #    variables = sorted(state.variables.items(), key=operator.itemgetter(1))
+            #    state.variables = variables
+            #    recursive_backtracking(state)
+            #below would be under the an else for the above if
+            if word_done:
+                new_options = state.options
+                new_options.remove(value)
+                new_spaces = state.variables
+                new_spaces.pop(0)
+                print_clean_grid(state.grid)
+                print ''
+                newState = state_node(state, new_options, state.words, state.grid, state.set_char, new_spaces)
+                recursive_backtracking(newState)
 
-            if not word_done:
-                state.options.remove(value)
-                variables = sorted(variables.items(), key=operator.itemgetter(1))
-                recursive_backtracking(state)
-            print_clean_grid(state.grid)
+        else:
+            print 'we need to delete the word make a new node--> under the same parent and minus word from state.options'
+    else:
+        state.options.remove(value)
+        print_clean_grid(state.grid)
+        print ''
+        newState = state_node(state, state.options, state.words, state.grid, state.set_char, state.variables)
+        recursive_backtracking(state)
     return
 
 def square_constraints(grid, i, j):
@@ -228,16 +347,41 @@ def y_constraints(grid, i, j):
 def constraints(grid, i, j):
     return square_constraints(grid, i, j) + x_constraints(grid, i, j) + y_constraints(grid, i, j)
 
-#make a priority queue ---> most contraint variables if tie then most constraining variable
-#for x in priority_queue
-#make a priority queue2 ---> values that are least constraining
-#   for y in priority_queue2
-#       set the x y in the grid
-#   new_node = backtrack(cur_node)
-#   if new_node is invalid()
-#       unset new_node
-#   else:
-#       return new_node
+
+
+#     new_options = state.options
+#     new_options = new_options.remove(value)
+#     new_grid =
+#     new_spaces = sorted(state.variables.items(), key=operator.itemgetter(1))
+#     newState = state_node(state, new_options, state.myWordList, state.myGrid, state.preset_chars, new_spaces)
+#     recursive_backtracking(newState)
+# else:
+#     #we need to remove the word cause it doesnt fit
+#     state.grid = delete_word(value, 'h', space_tuple, state.grid)
+#     #maybe worry about the root case?
+#     if len(state.options) == 0:
+#         pass
+#         #we need to go back up
+#     else:
+#
+#     state.options.remove(value)
+#     new_spaces = sorted(state.variables.items(), key=operator.itemgetter(1))
+#     newState = state_node(state, state.options, state.myWordList, state.myGrid, state.preset_chars, new_spaces)
+#     recursive_backtracking(newState)
+#     #not at root so make a new node from this states parent
+#     else:
+#
+#
+#         state.parent.options.remove(value)
+#         new_spaces = sorted(state.variables.items(), key=operator.itemgetter(1))
+#
+
+# newState = state_node(state.parent, state.parent.options, myWordList, myGrid, preset_chars, new_spaces)
+
+
+
+
+
 
 """
     argv[1] == grid file
@@ -249,6 +393,7 @@ def main():
     # make a grid object which contains space objects
     myGrid, empty_chars, preset_chars = define_grid()
     myWordList = word_list()
+    print myWordList
     #myWordList.sort(lambda  x,y: cmp(len(x), len(y)))
     myWordList= sorted(myWordList, key=lambda x: len(x))
 
@@ -263,6 +408,8 @@ def main():
         rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
     else:
         rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
+
+
     #"parent -> the parent node, options -> the different options avalible at this step,    words-> wordlist  grid ->actual grid variables-> the words left in the word bank"""
     #print_clean_grid(myGrid)
 
