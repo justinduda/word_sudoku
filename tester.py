@@ -61,7 +61,63 @@ def main():
     myWordList = word_list()
     word_dict = {}
     for elem in myWordList:
-        word_dict[elem] = 0
+        word_dict[elem] = []
+
+        for i in range(0, 8):
+            for j in range(0, 8):
+                start_coordinates = (i, j)
+
+                # check vertical placement
+                vertical_fit = True
+                b = j
+                for letter in elem:
+                    if b <= 8:
+                        if myGrid[i][b] == '_' or myGrid == letter:
+                            b += 1
+                        else:
+                            vertical_fit = False    # we know the entire word wont fit for this particular start coordinate
+                            break
+                # if the word does fit, add the start coordinate to the domain
+                if vertical_fit:
+                    word_dict[elem].append((start_coordinates, 'V'))
+
+                # check horizontal placement
+                horizontal_fit = True
+                a = i
+                for letter in elem:
+                    if a <= 8:
+                        if myGrid[a][j] == '_' or myGrid == elem[0]:
+                            a += 1
+                        else:
+                            horizontal_fit = False    # we know the entire word wont fit for this particular start coordinate
+                            break
+                # if the word does fit, add the start coordinate to the domain
+                if horizontal_fit:
+                    word_dict[elem].append((start_coordinates, 'H'))
+
+        for elem in word_dict:
+            print("WORD: " + elem + ", DOMAIN: " + str(word_dict[elem]) + ", DOMAIN_LENGTH: " + str(len(word_dict[elem])))
+
+
+        sorted_dict = sorted(word_dict, key=lambda k: len(word_dict[k]))
+
+        for item in sorted_dict:
+            print("WORD: " + item + " LENGTH: " + str(len(word_dict[item])))
+
+        # for item in range(0,len(sorted_dict)-1):
+        #     print("WORD: " + sorted_dict[item] + ", LENGTH" + str(len(sorted_dict[item])))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     #preset_chars = []
@@ -72,17 +128,25 @@ def main():
     #         if grid[x][y] != '_':
     #             preset_chars.append(grid[x][y], 0)
 
-    print("BEFORE SORT: " + str(word_dict))
 
-    for word in word_dict.keys():
-        for pair in preset_chars:
-            letter = preset_chars[pair]
-            if letter in word:
-                word_dict[word] += 1
 
-    post_sort = sorted(word_dict.items(), key=operator.itemgetter(1), reverse=True)
 
-    print("AFTER SORT: " + str(post_sort))
+
+
+
+
+
+    # print("BEFORE SORT: " + str(word_dict))
+    #
+    # for word in word_dict.keys():
+    #     for pair in preset_chars:
+    #         letter = preset_chars[pair]
+    #         if letter in word:
+    #             word_dict[word] += 1
+    #
+    # post_sort = sorted(word_dict.items(), key=operator.itemgetter(1), reverse=True)
+    #
+    # print("AFTER SORT: " + str(post_sort))
 
 
 if __name__ == '__main__':
