@@ -64,10 +64,10 @@ def word_list():
         return ret_list
 
 
-def valid_grid(state):
+def valid_grid(grid):
     """checks if we have a valid grid"""
     #checks rows
-    for line in state.grid:
+    for line in grid:
         rowoccurence = [None, None, None, None, None, None, None, None, None, None]
         for char_index in range(0, len(line)):
             rowoccurence[char_index] = line[char_index]
@@ -78,7 +78,7 @@ def valid_grid(state):
     for i in range(0,9):
         rowoccurence = [None, None, None, None, None, None, None, None, None, None]
         for j in range(0, 9):
-            rowoccurence[i] = state.grid[j][i]
+            rowoccurence[i] = grid[j][i]
         if not len(rowoccurence) != len(set(rowoccurence)):
             return False
 
@@ -87,17 +87,17 @@ def valid_grid(state):
     for j in range(3, 12, 3):
         check = []
         for i in range (0,3):
-            check.extend(state.grid[i][:j])
+            check.extend(grid[i][:j])
         if not len(check) != len(set(check)):
             return False
         check = []
         for i in range(3, 6):
-            check.extend(state.grid[i][:j])
+            check.extend(grid[i][:j])
         if not len(check) != len(set(check)):
             return False
         check = []
         for i in range(6, 9):
-            check.extend(state.grid[i][:j])
+            check.extend(grid[i][:j])
         if not len(check) != len(set(check)):
             return False
 
@@ -114,7 +114,6 @@ def backtracking_search(state):
     return recursive_backtracking(state)
 
 def print_clean_grid(Grid):
-
     for list in Grid:
         my_string = []
         for char in list:
@@ -168,156 +167,131 @@ def check_can_fit(dir, val, start):
         return True
 
 
+def check_horizontal(state, space_tuple, word):
+    count = 0
+    try:
+        for y in range( space_tuple[1], space_tuple[1] + len(word)):
+            #if we find a letter that shouldnt be there
+            if state.grid[space_tuple[0]][y] == '_' or state.grid[space_tuple[0]][y] == word[y - space_tuple[1]]:
+                count+=1
+    except IndexError:
+        return False
+
+    if count == len(word):
+        return True
+    return False
+
+def check_vertical(state, space_tuple, word):
+    count =0
+    try:
+        for x in range(space_tuple[0], space_tuple[0] + len(word)):
+            if state.grid[x][space_tuple[1]] == '_' or state.grid[x][space_tuple[1]] == word[x - space_tuple[0]]:
+                count+=1
+    except IndexError:
+        return False
+    if count == len(word):
+        return True
+    return False
+
+def check_valid_fit(state, space_tuple, word, dir):
+    temp_grid = state.grid
+    edited_temp_grid = put_word_in_temp_grid(temp_grid, space_tuple, word, dir)
+    if valid_grid(edited_temp_grid):
+        state.grid = edited_temp_grid
+        return True
+    return False
+
+
+def put_word_in_temp_grid(temp_grid, space_tuple, word, dir):
+    if dir == 'v':
+        for x in range(space_tuple[0], space_tuple[0] + len(word)):
+            temp_grid[x][space_tuple[1]] = word[x - space_tuple[0]]
+        return temp_grid
+    if dir == 'h':
+        for y in range(space_tuple[1], space_tuple[1] + len(word)):
+            temp_grid[space_tuple[0]][y] = word[y - space_tuple[1]]
+        return temp_grid
+
+
+
 def recursive_backtracking(state):
-    # if not valid_grid(state):
-    #     state = state.parent
-    # #return invalidstate() --> I think you need to go back up the tree here
-    # if complete_grid(state):
-    #     return state
+    if state.parent == None:
+        state = state_node(state, state.options, state.words, state.grid, state.set_char, state.variables)
+    # if complete_grid(state.grid):
+    #     return
 
-# Find most constrained variables
-# Assign least constraining value to it (try vertically and then horizontally)
-# Check if assignment is legal
-# if assignment is legal then recurse on next most constrained variable
-# if assignment is illegal then backtrack to last legal instance of the grid
-# Try assigning the next least constraining value to the current variable
-# recurse
-
-    print state.variables[0][0]
 
     space_tuple = state.variables[0][0]
-    value = state.options[0]
-    #check if the space_tuple is a letter, if so lets use that
-    if (space_tuple[0], space_tuple[1]) in state.set_char.keys():
-        letter = state.set_char[(space_tuple[0],space_tuple[1])]
-        for elem in state.options:
-            if elem[0] == letter:
-                value = elem
-                break
-
-
-    print value
-
-    word_done = False
+    word = state.options[0]
+    print word
+    print space_tuple
+    print_clean_grid(state.grid)
+    print ''
     print_starting_point(state.grid, space_tuple)
     print ''
 
-    # horz attempt
-    horz_succeeded = True
-    #check if the word will even fit
-    if check_can_fit('h',value,space_tuple):
-        for y in range(space_tuple[1], space_tuple[1] + len(value)):
-            #current grid index = _ OR index is already = to that letter
-            if state.grid[space_tuple[0]][y] == '_' or state.grid[space_tuple[0]][y] == value[y - space_tuple[1]]:
-                #set the index to the char
-                state.grid[space_tuple[0]][y] = value[y - space_tuple[1]]
-                #####need to add the letter to the preset_chars
-                #####state.set_char[space_tuple[0][y]] = value[y - space_tuple[1]]   ##-----> when we remove the letters we need to remove from this
-                #check some length??
-                if y - space_tuple[1] == len(value): #----> len(value) -1
-                    word_done = True
-            #if the index isn't that letter or _
-            else:
-                if (space_tuple[0], y) in state.set_char.keys():
-                    break
-                #if it is a letter
-                while state.grid[space_tuple[0]][space_tuple[1]] != '_':
-                    #if it isnt one of the preset chars
-                    if not (space_tuple[0],y) in state.set_char.keys():
-                        #set it back to a blank
-                        state.grid[space_tuple[0]][y] = '_'
-                    #go back one
-                    y -= 1
-                    #it fails in putting a word
-                    horz_succeeded = False
-                break
-        print_clean_grid(state.grid)
-        print ''
-    else:
-        horz_succeeded = False
-    if horz_succeeded:
-        if valid_grid(state):
-        #Remove variable and value from respective queues
-            # if not word_done:
-            #     state.parent.options.remove(value)
-            #     variables = sorted(state.variables.items(), key=operator.itemgetter(1))
-            #     state.variables = variables
-            #     if state.parent != None:
-            #         recursive_backtracking(state.parent)
+    word_put_in = False
+    if check_horizontal(state, space_tuple, word):
+        if check_valid_fit(state, space_tuple, word, 'h'):
+            word_put_in = True
+            #we need to make a new node parent is the current node
+            options =  state.options
+            options.remove(word)
+            variables = state.variables
+            variables.pop(0)
+            state = state_node(state, options, state.words, state.grid, state.set_char, variables)
+            recursive_backtracking(state)
+            #ret_val = recursive_backtracking(state)
+            #if ret_val != "Fail":
+            #    return state.grid
+
+    if check_vertical(state, space_tuple, word) and not word_put_in:
+        if check_valid_fit(state, space_tuple, word, 'v'):
+            #we need to make a new node parent is the current node
+            options = state.options
+            options.remove(word)
+            variables = state.variables
+            variables.pop(0)
+            state = state_node(state, options, state.words, state.grid, state.set_char, variables)
+            recursive_backtracking(state)
+            #ret_val = recursive_backtracking(state)
+            #if ret_val != 'Fail':
+            #    return state.grid
             # else:
-            #     variables = sorted(state.variables.items(), key=operator.itemgetter(1))
-            #     rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
-            if word_done:
-                new_options = state.options
-                new_options.remove(value)
-                new_spaces = state.variables
-                new_spaces.pop(0)
-                newState = state_node(state, new_options, state.words, state.grid, state.set_char, new_spaces)
-                print_clean_grid(state.grid)
-                print ''
-                recursive_backtracking(newState)
-            else:
-                new_options = state.options
-                new_options.remove(value)
-                new_spaces = state.variables
-                new_spaces.pop(0)
-                newState = state_node(state, new_options, state.words, state.grid, state.set_char, new_spaces)
-                print_clean_grid(state.grid)
-                print ''
-                recursive_backtracking(newState)
+            #     options = state.options
+            #     options.remove(word)
+            #     variables = state.variables
+            #     variables.pop(0)
+            #     state = state_node(state, options, state.words, state.grid, state.set_char, variables)
 
-        else:
-            return
+   # if complete_grid(state):
+   #     return state.grid
+   # else:
+   #     return 'Fail'
+
+    #go back up the tree!!!
+    # if len(state.options) == 1:
+    #     ret_val = 'Fail'
+    #     return ret_val
+
+    #the word didn't work so we need to try and different word under our parent
+    options = state.options
+    options.remove(word)
+    variables = state.variables
+    variables.pop(0)
+    state = state_node(state.parent, options, state.words, state.grid, state.set_char, variables)
+    recursive_backtracking(state)
+
+    #return
 
 
 
-    # vert attempt
-    vert_succeeded = True
-    if check_can_fit('v', value, space_tuple):
-        for x in range(space_tuple[0], space_tuple[0] + len(value)):
-            if state.grid[x][space_tuple[1]] == '_' or state.grid[x][space_tuple[1]] == value[x - space_tuple[0]]:
-                state.grid[x][space_tuple[1]] = value[x - space_tuple[0]]
-                if x - space_tuple[1] == len(value): #----> len(value) -1
-                    word_done = True
-            else:
-                while state.grid[space_tuple[0]][space_tuple[1]] != '_':
-                    if not (space_tuple[0], space_tuple[1]) in state.set_char.keys():
-                        state.grid[x][space_tuple[1]] = '_'
-                    x -= 1
-                    vert_succeeded = False
-                break
-    else:
-        print 'whyyy'
-        vert_succeeded = False
-    if vert_succeeded:
-        print 'in here'
-        if valid_grid(state):
-            # Remove variable and value from respective queues
-            #if not word_done:
-            #    state.options.remove(value)
-            #    variables = sorted(state.variables.items(), key=operator.itemgetter(1))
-            #    state.variables = variables
-            #    recursive_backtracking(state)
-            #below would be under the an else for the above if
-            if word_done:
-                new_options = state.options
-                new_options.remove(value)
-                new_spaces = state.variables
-                new_spaces.pop(0)
-                print_clean_grid(state.grid)
-                print ''
-                newState = state_node(state, new_options, state.words, state.grid, state.set_char, new_spaces)
-                recursive_backtracking(newState)
 
-        else:
-            print 'we need to delete the word make a new node--> under the same parent and minus word from state.options'
-    else:
-        state.options.remove(value)
-        print_clean_grid(state.grid)
-        print ''
-        newState = state_node(state, state.options, state.words, state.grid, state.set_char, state.variables)
-        recursive_backtracking(state)
-    return
+
+
+
+
+
 
 def square_constraints(grid, i, j):
     start_x = i+3 % 3
