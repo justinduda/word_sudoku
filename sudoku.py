@@ -271,113 +271,34 @@ def next_state(state):
                 if check_vertical(state_new, space, word):
                     if check_valid_fit(state_new, space, word, 'v'):
                         stateList.append(state_new)
-                        #print 'V'
-                        #time.sleep(2)
             #Lets try horizontal now
             else:
                 if check_horizontal(state_new, space, word):
                     if check_valid_fit(state_new, space, word, 'h'):
                         stateList.append(state_new)
-                        #print 'H'
-                        #print_clean_grid(temp_grid)
-                        #time.sleep(2)
-        state.options.remove(word)
+        #state.options.remove(word)
 
     return stateList
 
 
 
-
-
 def recursive_backtracking(state):
     nextStates = next_state(state)
-    if len(nextStates):
+
+    if len(nextStates) == 0:
         if complete_grid(state.grid):
-            print_clean_grid(state.grid)
-            return state
+           print 'here'
+           print_clean_grid(state.grid)
+           return state
         else:
-            print 'failing'
+            print_clean_grid(state.grid)
+            print 'failing2'
             return None
     for state in nextStates:
         ret =  recursive_backtracking(state)
         if ret:
             return ret
-    print 'failing'
     return None
-
-# def recursive_backtracking(state):
-#     if state.parent == None:
-#         state_new = state_node(state, state.options, state.words, state.grid, state.set_char, state.variables)
-#     # if complete_grid(state.grid):
-#     #     return
-#     else:
-#         state_new = state
-#
-#
-#     space_tuple = state.variables[0][0]
-#     word = state.options[0]
-#     print word
-#     print space_tuple
-#     print_clean_grid(state.grid)
-#     print ''
-#     print_starting_point(state.grid, space_tuple)
-#     print ''
-#
-#     word_put_in = False
-#     if check_horizontal(state, space_tuple, word):
-#         if check_valid_fit(state, space_tuple, word, 'h'):
-#             word_put_in = True
-#             #we need to make a new node parent is the current node
-#             options =  state.options
-#             options.remove(word)
-#             variables = state.variables
-#             variables.pop(0)
-#             state = state_node(state, options, state.words, state.grid, state.set_char, variables)
-#             recursive_backtracking(state)
-#             #ret_val = recursive_backtracking(state)
-#             #if ret_val != "Fail":
-#             #    return state.grid
-#
-#     if check_vertical(state, space_tuple, word) and not word_put_in:
-#         if check_valid_fit(state, space_tuple, word, 'v'):
-#             #we need to make a new node parent is the current node
-#             options = state.options
-#             options.remove(word)
-#             variables = state.variables
-#             variables.pop(0)
-#             state = state_node(state, options, state.words, state.grid, state.set_char, variables)
-#             recursive_backtracking(state)
-#             #ret_val = recursive_backtracking(state)
-#             #if ret_val != 'Fail':
-#             #    return state.grid
-#             # else:
-#             #     options = state.options
-#             #     options.remove(word)
-#             #     variables = state.variables
-#             #     variables.pop(0)
-#             #     state = state_node(state, options, state.words, state.grid, state.set_char, variables)
-#
-#    # if complete_grid(state):
-#    #     return state.grid
-#    # else:
-#    #     return 'Fail'
-#
-#     #go back up the tree!!!
-#     if len(state.options) == 1:
-#         ret_val = 'Fail'
-#         return ret_val
-#
-#     #the word didn't work so we need to try and different word under our parent
-#     options = state.options
-#     options.remove(word)
-#     variables = state.variables
-#     variables.pop(0)
-#     state = state_node(state.parent, options, state.words, state.grid, state.set_char, variables)
-#     recursive_backtracking(state)
-#
-#     #return
-#
-
 
 def square_constraints(grid, i, j):
     start_x = i+3 % 3
@@ -407,42 +328,6 @@ def y_constraints(grid, i, j):
 def constraints(grid, i, j):
     return square_constraints(grid, i, j) + x_constraints(grid, i, j) + y_constraints(grid, i, j)
 
-
-
-#     new_options = state.options
-#     new_options = new_options.remove(value)
-#     new_grid =
-#     new_spaces = sorted(state.variables.items(), key=operator.itemgetter(1))
-#     newState = state_node(state, new_options, state.myWordList, state.myGrid, state.preset_chars, new_spaces)
-#     recursive_backtracking(newState)
-# else:
-#     #we need to remove the word cause it doesnt fit
-#     state.grid = delete_word(value, 'h', space_tuple, state.grid)
-#     #maybe worry about the root case?
-#     if len(state.options) == 0:
-#         pass
-#         #we need to go back up
-#     else:
-#
-#     state.options.remove(value)
-#     new_spaces = sorted(state.variables.items(), key=operator.itemgetter(1))
-#     newState = state_node(state, state.options, state.myWordList, state.myGrid, state.preset_chars, new_spaces)
-#     recursive_backtracking(newState)
-#     #not at root so make a new node from this states parent
-#     else:
-#
-#
-#         state.parent.options.remove(value)
-#         new_spaces = sorted(state.variables.items(), key=operator.itemgetter(1))
-#
-
-# newState = state_node(state.parent, state.parent.options, myWordList, myGrid, preset_chars, new_spaces)
-
-
-
-
-
-
 """
     argv[1] == grid file
     argv[2] == word bank file
@@ -468,16 +353,8 @@ def main():
     else:
         rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
 
-
-    #print_clean_grid(myGrid)
-
     state = backtracking_search(rootState)
     print_clean_grid(state.grid)
-
-
-
-
-
 
 
 if __name__ == '__main__':
