@@ -1,5 +1,7 @@
 from sys import argv
 import operator
+import time
+import copy
 
 def define_grid():
     grid = []
@@ -103,10 +105,10 @@ def valid_grid(grid):
 
     return True
 
-def complete_grid(state):
+def complete_grid(grid):
     """check if the grid is completely filled not IF IT IS SOLVED!!!"""
-    for line in state.grid:
-        if None in line:
+    for line in grid:
+        if '_' in line:
             return False
     return True
 
@@ -182,7 +184,7 @@ def check_horizontal(state, space_tuple, word):
     return False
 
 def check_vertical(state, space_tuple, word):
-    count =0
+    count = 0
     try:
         for x in range(space_tuple[0], space_tuple[0] + len(word)):
             if state.grid[x][space_tuple[1]] == '_' or state.grid[x][space_tuple[1]] == word[x - space_tuple[0]]:
@@ -212,85 +214,169 @@ def put_word_in_temp_grid(temp_grid, space_tuple, word, dir):
             temp_grid[space_tuple[0]][y] = word[y - space_tuple[1]]
         return temp_grid
 
+def nikku_algo():
+    myGrid, empty_chars, preset_chars = define_grid()
+    myWordList = word_list()
+    word_dict = {}
+    for elem in myWordList:
+        word_dict[elem] = []
+
+        for i in range(0, 8):
+            for j in range(0, 8):
+                start_coordinates = (i, j)
+
+                # check vertical placement
+                vertical_fit = True
+                b = j
+                for letter in elem:
+                    if b <= 8:
+                        if myGrid[i][b] == '_' or myGrid == letter:
+                            b += 1
+                        else:
+                            vertical_fit = False  # we know the entire word wont fit for this particular start coordinate
+                            break
+                # if the word does fit, add the start coordinate to the domain
+                if vertical_fit:
+                    word_dict[elem].append((start_coordinates, 'V'))
+
+                # check horizontal placement
+                horizontal_fit = True
+                a = i
+                for letter in elem:
+                    if a <= 8:
+                        if myGrid[a][j] == '_' or myGrid == elem[0]:
+                            a += 1
+                        else:
+                            horizontal_fit = False  # we know the entire word wont fit for this particular start coordinate
+                            break
+                # if the word does fit, add the start coordinate to the domain
+                if horizontal_fit:
+                    word_dict[elem].append((start_coordinates, 'H'))
+    return word_dict
+
+
+def next_state(state):
+    stateList = []
+    word_dict = nikku_algo()
+    #word = state.options.pop(0)
+    for word in state.options:
+        for space_tuple in word_dict[word]:
+            #set some variables
+            temp_grid = copy.deepcopy(state.grid)
+            state_new = state_node(None, state.options, state.words, temp_grid, state.set_char, state.variables)
+            dir = space_tuple[1]
+            space = space_tuple[0]
+            #Lets try vertical now
+            if dir == 'V':
+                if check_vertical(state_new, space, word):
+                    if check_valid_fit(state_new, space, word, 'v'):
+                        stateList.append(state_new)
+                        #print 'V'
+                        #time.sleep(2)
+            #Lets try horizontal now
+            else:
+                if check_horizontal(state_new, space, word):
+                    if check_valid_fit(state_new, space, word, 'h'):
+                        stateList.append(state_new)
+                        #print 'H'
+                        #print_clean_grid(temp_grid)
+                        #time.sleep(2)
+        state.options.remove(word)
+
+    return stateList
+
+
+
 
 
 def recursive_backtracking(state):
-    if state.parent == None:
-        state = state_node(state, state.options, state.words, state.grid, state.set_char, state.variables)
-    # if complete_grid(state.grid):
-    #     return
+    nextStates = next_state(state)
+    if len(nextStates):
+        if complete_grid(state.grid):
+            print_clean_grid(state.grid)
+            return state
+        else:
+            print 'failing'
+            return None
+    for state in nextStates:
+        ret =  recursive_backtracking(state)
+        if ret:
+            return ret
+    print 'failing'
+    return None
 
-
-    space_tuple = state.variables[0][0]
-    word = state.options[0]
-    print word
-    print space_tuple
-    print_clean_grid(state.grid)
-    print ''
-    print_starting_point(state.grid, space_tuple)
-    print ''
-
-    word_put_in = False
-    if check_horizontal(state, space_tuple, word):
-        if check_valid_fit(state, space_tuple, word, 'h'):
-            word_put_in = True
-            #we need to make a new node parent is the current node
-            options =  state.options
-            options.remove(word)
-            variables = state.variables
-            variables.pop(0)
-            state = state_node(state, options, state.words, state.grid, state.set_char, variables)
-            recursive_backtracking(state)
-            #ret_val = recursive_backtracking(state)
-            #if ret_val != "Fail":
-            #    return state.grid
-
-    if check_vertical(state, space_tuple, word) and not word_put_in:
-        if check_valid_fit(state, space_tuple, word, 'v'):
-            #we need to make a new node parent is the current node
-            options = state.options
-            options.remove(word)
-            variables = state.variables
-            variables.pop(0)
-            state = state_node(state, options, state.words, state.grid, state.set_char, variables)
-            recursive_backtracking(state)
-            #ret_val = recursive_backtracking(state)
-            #if ret_val != 'Fail':
-            #    return state.grid
-            # else:
-            #     options = state.options
-            #     options.remove(word)
-            #     variables = state.variables
-            #     variables.pop(0)
-            #     state = state_node(state, options, state.words, state.grid, state.set_char, variables)
-
-   # if complete_grid(state):
-   #     return state.grid
-   # else:
-   #     return 'Fail'
-
-    #go back up the tree!!!
-    # if len(state.options) == 1:
-    #     ret_val = 'Fail'
-    #     return ret_val
-
-    #the word didn't work so we need to try and different word under our parent
-    options = state.options
-    options.remove(word)
-    variables = state.variables
-    variables.pop(0)
-    state = state_node(state.parent, options, state.words, state.grid, state.set_char, variables)
-    recursive_backtracking(state)
-
-    #return
-
-
-
-
-
-
-
-
+# def recursive_backtracking(state):
+#     if state.parent == None:
+#         state_new = state_node(state, state.options, state.words, state.grid, state.set_char, state.variables)
+#     # if complete_grid(state.grid):
+#     #     return
+#     else:
+#         state_new = state
+#
+#
+#     space_tuple = state.variables[0][0]
+#     word = state.options[0]
+#     print word
+#     print space_tuple
+#     print_clean_grid(state.grid)
+#     print ''
+#     print_starting_point(state.grid, space_tuple)
+#     print ''
+#
+#     word_put_in = False
+#     if check_horizontal(state, space_tuple, word):
+#         if check_valid_fit(state, space_tuple, word, 'h'):
+#             word_put_in = True
+#             #we need to make a new node parent is the current node
+#             options =  state.options
+#             options.remove(word)
+#             variables = state.variables
+#             variables.pop(0)
+#             state = state_node(state, options, state.words, state.grid, state.set_char, variables)
+#             recursive_backtracking(state)
+#             #ret_val = recursive_backtracking(state)
+#             #if ret_val != "Fail":
+#             #    return state.grid
+#
+#     if check_vertical(state, space_tuple, word) and not word_put_in:
+#         if check_valid_fit(state, space_tuple, word, 'v'):
+#             #we need to make a new node parent is the current node
+#             options = state.options
+#             options.remove(word)
+#             variables = state.variables
+#             variables.pop(0)
+#             state = state_node(state, options, state.words, state.grid, state.set_char, variables)
+#             recursive_backtracking(state)
+#             #ret_val = recursive_backtracking(state)
+#             #if ret_val != 'Fail':
+#             #    return state.grid
+#             # else:
+#             #     options = state.options
+#             #     options.remove(word)
+#             #     variables = state.variables
+#             #     variables.pop(0)
+#             #     state = state_node(state, options, state.words, state.grid, state.set_char, variables)
+#
+#    # if complete_grid(state):
+#    #     return state.grid
+#    # else:
+#    #     return 'Fail'
+#
+#     #go back up the tree!!!
+#     if len(state.options) == 1:
+#         ret_val = 'Fail'
+#         return ret_val
+#
+#     #the word didn't work so we need to try and different word under our parent
+#     options = state.options
+#     options.remove(word)
+#     variables = state.variables
+#     variables.pop(0)
+#     state = state_node(state.parent, options, state.words, state.grid, state.set_char, variables)
+#     recursive_backtracking(state)
+#
+#     #return
+#
 
 
 def square_constraints(grid, i, j):
@@ -367,7 +453,6 @@ def main():
     # make a grid object which contains space objects
     myGrid, empty_chars, preset_chars = define_grid()
     myWordList = word_list()
-    print myWordList
     #myWordList.sort(lambda  x,y: cmp(len(x), len(y)))
     myWordList= sorted(myWordList, key=lambda x: len(x))
 
@@ -384,27 +469,12 @@ def main():
         rootState = state_node(None, myWordList, myWordList, myGrid, preset_chars, variables)
 
 
-    #"parent -> the parent node, options -> the different options avalible at this step,    words-> wordlist  grid ->actual grid variables-> the words left in the word bank"""
     #print_clean_grid(myGrid)
 
-    backtracking_search(rootState)
+    state = backtracking_search(rootState)
+    print_clean_grid(state.grid)
 
 
-#make a node object for each different game option
-#the node should list the different possibilities so it is easy to back trace
-#define the most constrained variables
-#most stuff in the column, row, in the cell --> we can figure this out by looking at the space objects
-#but would it be easier to check column, row, cell indivually? and we wouldnt need the space object just put a value
-#define the least constraining vairables
-# most stuff in the column, row, in the cell --> we can figure this out by looking at the space objects
-# but would it be easier to check column, row, cell indivually? and we wouldnt need the space object just put a value
-#define the most constraining variables
-#smallest word in the word bank
-
-#depth-first search
-#call backtracking algo
-
-#how to incorporate the wrong words in the word bank????
 
 
 
